@@ -3,9 +3,18 @@
 
 using namespace std;
 
+const int n = 9;
+
+bool fun(bool *x)
+{
+    for (unsigned int j = 0; j < n-2; ++j)
+        if ((x[j] != x[j+1]) && (x[j] != x[j+2]))
+            return false;
+    return true;
+}
+
 int main()
 {
-    const int n = 9;
     for (unsigned int i = 0; i < pow(2, n); ++i)
     {
         bool x[n];
@@ -15,16 +24,7 @@ int main()
             x[n-j-1] = 0x1 & k;
             k >>= 1;
         }
-        int f = 1;
-        for (unsigned int j = 0; j < n-2; ++j)
-        {
-            if ((x[j] != x[j+1]) && (x[j] != x[j+2]))
-            {
-                f = 0;
-                break;
-            }
-        }
-        if (f)
+        if (fun(x))
         {
             for (unsigned int j = 0; j < n; ++j)
                 cout << x[j];
