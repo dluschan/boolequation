@@ -13,7 +13,7 @@ bool fun(bool *x)
 	return true;
 }
 
-int main()
+void overrun()
 {
 	for (unsigned int i = 0; i < pow(2, n); ++i)
 	{
@@ -31,6 +31,32 @@ int main()
 			cout << endl;
 		}
 	}
-	return 0;
 }
 
+int main(int argc, char* argv[])
+{
+	switch(argc)
+	{
+	case 1:
+		cout << "запуск без параметров. выбран режим работы по умолчанию." << endl;
+		overrun();
+		return 0;
+	case 2:
+		if (!strcmp(argv[1],"-d"))
+		{
+			cout << "режим работы по умолчанию" << endl;
+			overrun();
+			return 0;
+		}
+		if (!strcmp(argv[1],"-i"))
+		{
+			cout << "интерактивный режим еще не поддерживается" << endl;
+			return(10);
+		}
+		cout << "неизвестный параметр" << endl;
+		return(1);
+	default:
+		cout << "слишком много параметров" << endl;
+		return(2);
+	}
+}
