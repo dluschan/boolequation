@@ -22,6 +22,23 @@ public:
 };
 typedef shared_ptr<Expr> PExpr;
 
+class Equality: public Expr
+{
+public:
+	Equality(PExpr pLeft, PExpr pRight)
+		: left (pLeft )
+		, right(pRight)
+	{}
+	operator bool() const
+	{
+		return *left == *right;
+	}
+
+private:
+	PExpr left;
+	PExpr right;
+};
+
 class Disjunction: public Expr
 {
 public:
@@ -90,7 +107,7 @@ enum Token_value
 {
 	NAME, NUMBER, END = ';',
 	OR = '|', AND = '&', NOT = '!',
-	EQV = '=', LP = '(', RP = ')'
+	EQL = '=', LP = '(', RP = ')'
 };
 
 Token_value curr_tok = END;
@@ -99,7 +116,7 @@ string string_value;
 map<string, bool> table;
 int no_of_errors;
 
-PExpr expr(bool);
+PExpr equal_expr(bool);
 
 int error(const string& s)
 {
@@ -160,7 +177,7 @@ PExpr prim(bool get)
 	}
 	case LP:
 	{
-		PExpr e = expr(true);
+		PExpr e = equal_expr(true);
 		if (curr_tok != RP)
 			error("ожидалась )");
 		get_token();
@@ -168,7 +185,7 @@ PExpr prim(bool get)
 	}
 	case NOT:
 	{
-		PExpr e = expr(true);
+		PExpr e = equal_expr(true);
 		e = make_shared<Negation>(e);
 		get_token();
 		return e;
@@ -216,6 +233,25 @@ PExpr expr(bool get)
 	}
 }
 
+PExpr equal_expr(bool get)
+{
+	PExpr pLeft = expr(get);
+	while (true)
+	{
+		switch(curr_tok)
+		{
+		case EQL:
+		{
+			PExpr pRight = expr(true);
+			pLeft = make_shared<Equality>(pLeft, pRight);
+			break;
+		}
+		default:
+			return pLeft;
+		}
+	}
+}
+
 void compile()
 {
 	freopen("input.txt", "r", stdin);
@@ -224,7 +260,7 @@ void compile()
 		get_token();
 		if (curr_tok == END)
 			break;
-		cout << *expr(false) << endl;
+		cout << *equal_expr(false) << endl;
 	}
 }
 
