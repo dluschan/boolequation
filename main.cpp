@@ -194,7 +194,7 @@ PExpr prim()
 	}
 	case NOT:
 	{
-		PExpr e = equal_expr();
+		PExpr e = prim();
 		e = make_shared<Negation>(e);
 		return e;
 	}
@@ -272,14 +272,22 @@ void overrun_expression()
 	for (unsigned int i = 0; i < pow(2, variables.size()); ++i)
 	{
 		unsigned k = i;
-		for(auto pVar: variables)
+		for (auto it = variables.rbegin(); it != variables.rend(); ++it)
 		{
-			pVar.second->setValue(0x1 & k);
+			it->second->setValue(0x1 & k);
 			k >>= 1;
 		}
+		bool res = true;
 		for(auto expr: expressions)
 		{
-			cout << *expr << endl;
+			if (!*expr)
+				res = false;
+		}
+		if (res)
+		{
+			for(auto pVar: variables)
+				cout << *pVar.second;
+			cout << endl;
 		}
 	}
 }
