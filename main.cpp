@@ -88,10 +88,10 @@ private:
 	PExpr expr;
 };
 
-class ValueToken: public Expr
+class Сonstant: public Expr
 {
 public:
-	ValueToken(bool b)
+	Сonstant(bool b)
 		: value(b)
 	{}
 	operator bool() const
@@ -105,7 +105,7 @@ private:
 
 enum Token_value
 {
-	NAME, NUMBER, END = ';',
+	ERROR, NAME, NUMBER, END = ';',
 	OR = '|', AND = '&', NOT = '!',
 	EQL = '=', LP = '(', RP = ')'
 };
@@ -113,15 +113,15 @@ enum Token_value
 Token_value curr_tok = END;
 bool number_value;
 string string_value;
-map<string, bool> table;
+map<string, bool> variables;
 int no_of_errors;
 
-PExpr equal_expr(bool);
+PExpr equal_expr();
 
 int error(const string& s)
 {
 	++no_of_errors;
-	cerr << "ошибка: " << s << endl;
+	cout << "ошибка: " << s << endl;
 	return 1;
 }
 
@@ -131,19 +131,9 @@ Token_value get_token()
 	cin >> ch;
 	switch(ch)
 	{
-	case 0:
-		return curr_tok = END;
-	case ';':
-	case '&':
-	case '|':
-	case '(':
-	case ')':
-	case '=':
-	case '!':
+	case ';': case '&': case '|': case '(': case ')': case '=': case '!':
 		return curr_tok = Token_value(ch);
-	case '0': case '1': case '2': case '3': case '4':
-	case '5': case '6': case '7': case '8': case '9':
-	case '.':
+	case '0': case '1':
 		cin.putback(ch);
 		cin >> number_value;
 		return curr_tok = NUMBER;
@@ -156,16 +146,14 @@ Token_value get_token()
 		}
 		else
 		{
-			error("неправильная лексема");
-			return curr_tok = END;
+			return curr_tok = ERROR;
 		}
 	}
 }
 
-PExpr prim(bool get)
+PExpr prim()
 {
-	if (get)
-		get_token();
+	get_token();
 
 	switch(curr_tok)
 	{
@@ -173,11 +161,11 @@ PExpr prim(bool get)
 	{
 		bool v = number_value;
 		get_token();
-		return make_shared<ValueToken>(v);
+		return make_shared<Сonstant>(v);
 	}
 	case LP:
 	{
-		PExpr e = equal_expr(true);
+		PExpr e = equal_expr();
 		if (curr_tok != RP)
 			error("ожидалась )");
 		get_token();
@@ -185,26 +173,26 @@ PExpr prim(bool get)
 	}
 	case NOT:
 	{
-		PExpr e = equal_expr(true);
+		PExpr e = equal_expr();
 		e = make_shared<Negation>(e);
-		get_token();
 		return e;
 	}
+	case NAME:
 	default:
 		return PExpr();
 	}
 }
 
-PExpr term(bool get)
+PExpr term()
 {
-	PExpr pLeft = prim(get);
+	PExpr pLeft = prim();
 	while (true)
 	{
 		switch(curr_tok)
 		{
 		case AND:
 		{
-			PExpr pRight = prim(true);
+			PExpr pRight = prim();
 			pLeft = make_shared<Conjunction>(pLeft, pRight);
 			break;
 		}
@@ -214,16 +202,16 @@ PExpr term(bool get)
 	}
 }
 
-PExpr expr(bool get)
+PExpr or_expr()
 {
-	PExpr pLeft = term(get);
+	PExpr pLeft = term();
 	while (true)
 	{
 		switch(curr_tok)
 		{
 		case OR:
 		{
-			PExpr pRight = term(true);
+			PExpr pRight = term();
 			pLeft = make_shared<Disjunction>(pLeft, pRight);
 			break;
 		}
@@ -233,16 +221,16 @@ PExpr expr(bool get)
 	}
 }
 
-PExpr equal_expr(bool get)
+PExpr equal_expr()
 {
-	PExpr pLeft = expr(get);
+	PExpr pLeft = or_expr();
 	while (true)
 	{
 		switch(curr_tok)
 		{
 		case EQL:
 		{
-			PExpr pRight = expr(true);
+			PExpr pRight = or_expr();
 			pLeft = make_shared<Equality>(pLeft, pRight);
 			break;
 		}
@@ -255,12 +243,21 @@ PExpr equal_expr(bool get)
 void compile()
 {
 	freopen("input.txt", "r", stdin);
-	while(cin)
+	char ch;
+	while(cin >> ch)
 	{
-		get_token();
+		cin.putback(ch);
+		PExpr pExpr = equal_expr();
 		if (curr_tok == END)
+		{
+			if (pExpr)
+				cout << *pExpr << endl;
+		}
+		else
+		{
+			error("неправильная лексема");
 			break;
-		cout << *equal_expr(false) << endl;
+		}
 	}
 }
 
