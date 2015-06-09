@@ -166,6 +166,13 @@ PExpr prim(bool get)
 		get_token();
 		return e;
 	}
+	case NOT:
+	{
+		PExpr e = expr(true);
+		e = make_shared<Negation>(e);
+		get_token();
+		return e;
+	}
 	default:
 		return PExpr();
 	}
