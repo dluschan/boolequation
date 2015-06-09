@@ -18,10 +18,7 @@ class Expr
 {
 public:
 	Expr(){}
-	virtual operator double() const
-	{
-		return 0.0;
-	}
+	virtual operator double() const = 0;
 };
 
 typedef shared_ptr<Expr> PExpr;
@@ -160,19 +157,19 @@ PExpr prim(bool get)
 
 PExpr term(bool get)
 {
-	PExpr left = prim(get);
+	PExpr pLeft = prim(get);
 	while (true)
 	{
 		switch(curr_tok)
 		{
 		case MUL:
 		{
-			PExpr right = prim(get);
-			left = std::make_shared<MulToken>(left, right);
+			PExpr pRight = prim(true);
+			pLeft = std::make_shared<MulToken>(pLeft, pRight);
 			break;
 		}
 		default:
-			return left;
+			return pLeft;
 		}
 	}
 }
@@ -180,14 +177,13 @@ PExpr term(bool get)
 PExpr expr(bool get)
 {
 	PExpr pLeft = term(get);
-	PExpr pRight;
 	while(true)
 	{
 		switch(curr_tok)
 		{
 		case PLUS:
 		{
-			pRight = term(true);
+			PExpr pRight = term(true);
 			pLeft = make_shared<PlusToken>(pLeft, pRight);
 			break;
 		}
@@ -199,7 +195,7 @@ PExpr expr(bool get)
 
 void compile()
 {
-	//freopen("input.txt", "r", stdin);
+	freopen("input.txt", "r", stdin);
 	while(cin)
 	{
 		get_token();
