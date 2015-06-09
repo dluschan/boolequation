@@ -14,6 +14,67 @@ bool fun(bool *x)
 	return true;
 }
 
+class Expr
+{
+public:
+	Expr(){}
+	virtual operator double() const
+	{
+		return 0.0;
+	}
+};
+
+typedef shared_ptr<Expr> PExpr;
+
+class PlusToken: public Expr
+{
+public:
+	PlusToken(PExpr pLeft, PExpr pRight)
+		: left (pLeft )
+		, right(pRight)
+	{}
+	operator double() const
+	{
+		return *left + *right;
+	}
+
+private:
+	PExpr left;
+	PExpr right;
+};
+
+class MulToken: public Expr
+{
+public:
+	MulToken(PExpr pLeft, PExpr pRight)
+		: left (pLeft )
+		, right(pRight)
+	{}
+	operator double() const
+	{
+		return *left * *right;
+	}
+
+private:
+	PExpr left;
+	PExpr right;
+};
+
+class ValueToken: public Expr
+{
+public:
+	ValueToken(double v)
+		: value(v)
+	{}
+	operator double() const
+	{
+		return value;
+	}
+
+private:
+	double value;
+};
+
 enum Token_value
 {
 	NAME, NUMBER, END,
@@ -27,7 +88,7 @@ string string_value;
 map<string, double> table;
 int no_of_errors;
 
-double expr(bool);
+PExpr expr(bool);
 
 int error(const string& s)
 {
@@ -71,7 +132,7 @@ Token_value get_token()
 	}
 }
 
-double prim(bool get)
+PExpr prim(bool get)
 {
 	if (get)
 		get_token();
@@ -82,74 +143,63 @@ double prim(bool get)
 	{
 		double v = number_value;
 		get_token();
-		return v;
+		return make_shared<ValueToken>(v);
 	}
-	case NAME:
-	{
-		double& g = table[string_value];
-		if (get_token() == ASSIGN)
-			g = expr(true);
-		return g;
-	}
-	case MINUS:
-		return -prim(true);
 	case LP:
 	{
-		double e = expr(true);
+		PExpr e = expr(true);
 		if (curr_tok != RP)
-			return error("ожидалась )");
+			error("ожидалась )");
 		get_token();
 		return e;
 	}
 	default:
-		return error("ожидалось первичное выражение");
+		return PExpr();
 	}
 }
 
-double term(bool get)
+PExpr term(bool get)
 {
-	double left = prim(get);
+	PExpr left = prim(get);
 	while (true)
 	{
 		switch(curr_tok)
 		{
 		case MUL:
-			left *= prim(true);
+		{
+			PExpr right = prim(get);
+			left = std::make_shared<MulToken>(left, right);
 			break;
-		case DIV:
-			if (double d = prim(true))
-			{
-				left /= d;
-				break;
-			}
-			return error("деление на 0");
+		}
 		default:
 			return left;
 		}
 	}
 }
 
-double expr(bool get)
+PExpr expr(bool get)
 {
-	double left = term(get);
+	PExpr pLeft = term(get);
+	PExpr pRight;
 	while(true)
 	{
 		switch(curr_tok)
 		{
 		case PLUS:
-			left += term(true);
+		{
+			pRight = term(true);
+			pLeft = make_shared<PlusToken>(pLeft, pRight);
 			break;
-		case MINUS:
-			left -= term(true);
-			break;
+		}
 		default:
-			return left;
+			return pLeft;
 		}
 	}
 }
 
-void calculate()
+void compile()
 {
+	//freopen("input.txt", "r", stdin);
 	while(cin)
 	{
 		get_token();
@@ -157,7 +207,7 @@ void calculate()
 			break;
 		if (curr_tok == PRINT)
 			continue;
-		cout << expr(false) << endl;
+		cout << *expr(false) << endl;
 	}
 }
 
@@ -199,7 +249,7 @@ int main(int argc, char* argv[])
 		if (!strcmp(argv[1],"-i"))
 		{
 			cout << "интерактивный режим еще не поддерживается, пока запускается просто калькулятор" << endl;
-			calculate();
+			compile();
 			return(10);
 		}
 		cout << "неизвестный параметр" << endl;
