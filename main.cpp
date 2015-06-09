@@ -1,5 +1,6 @@
 #include <iostream>
 #include <map>
+#include <vector>
 #include <math.h>
 
 using namespace std;
@@ -19,6 +20,7 @@ class Expr
 public:
 	Expr(){}
 	virtual operator bool() const = 0;
+	virtual void setValue(bool){}
 };
 typedef shared_ptr<Expr> PExpr;
 
@@ -88,12 +90,30 @@ private:
 	PExpr expr;
 };
 
-class Сonstant: public Expr
+class Constant: public Expr
 {
 public:
-	Сonstant(bool b)
+	Constant(bool b)
 		: value(b)
 	{}
+	operator bool() const
+	{
+		return value;
+	}
+
+private:
+	bool value;
+};
+
+class Variable: public Expr
+{
+public:
+	Variable(){}
+	void setValue(bool b)
+	{
+		value = b;
+	}
+
 	operator bool() const
 	{
 		return value;
@@ -113,7 +133,8 @@ enum Token_value
 Token_value curr_tok = END;
 bool number_value;
 string string_value;
-map<string, bool> variables;
+map<string, PExpr> variables;
+vector<PExpr> expressions;
 int no_of_errors;
 
 PExpr equal_expr();
@@ -161,7 +182,7 @@ PExpr prim()
 	{
 		bool v = number_value;
 		get_token();
-		return make_shared<Сonstant>(v);
+		return make_shared<Constant>(v);
 	}
 	case LP:
 	{
@@ -178,6 +199,12 @@ PExpr prim()
 		return e;
 	}
 	case NAME:
+	{
+		if (variables.find(string_value) == variables.end())
+			variables[string_value] = make_shared<Variable>();
+		get_token();
+		return variables[string_value];
+	}
 	default:
 		return PExpr();
 	}
@@ -240,10 +267,28 @@ PExpr equal_expr()
 	}
 }
 
+void overrun_expression()
+{
+	for (unsigned int i = 0; i < pow(2, variables.size()); ++i)
+	{
+		unsigned k = i;
+		for(auto pVar: variables)
+		{
+			pVar.second->setValue(0x1 & k);
+			k >>= 1;
+		}
+		for(auto expr: expressions)
+		{
+			cout << *expr << endl;
+		}
+	}
+}
+
 void compile()
 {
 	freopen("input.txt", "r", stdin);
 	char ch;
+
 	while(cin >> ch)
 	{
 		cin.putback(ch);
@@ -251,12 +296,12 @@ void compile()
 		if (curr_tok == END)
 		{
 			if (pExpr)
-				cout << *pExpr << endl;
+				expressions.push_back(pExpr);
 		}
 		else
 		{
 			error("неправильная лексема");
-			break;
+			return;
 		}
 	}
 }
@@ -300,6 +345,7 @@ int main(int argc, char* argv[])
 		{
 			cout << "интерактивный режим работы" << endl;
 			compile();
+			overrun_expression();
 			return(10);
 		}
 		cout << "неизвестный параметр" << endl;
