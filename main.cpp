@@ -2,6 +2,7 @@
 #include <map>
 #include <vector>
 #include <math.h>
+#include <memory>
 
 using namespace std;
 
