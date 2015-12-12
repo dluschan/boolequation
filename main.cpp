@@ -275,30 +275,34 @@ void overrun_expression()
 	}
 }
 
-void compile()
+class Compiler
 {
-	char ch;
-
-	while(cin >> ch)
+public:
+	Compiler(istream& s)
 	{
-		cin.putback(ch);
-		PExpr pExpr = equal_expr();
-		if (curr_tok == END)
+		char ch;
+
+		while(s >> ch)
 		{
-			if (pExpr)
-				expressions.push_back(pExpr);
-		}
-		else
-		{
-			cerr << "неправильная лексема" << endl;
-			return;
+			s.putback(ch);
+			PExpr pExpr = equal_expr();
+			if (curr_tok == END)
+			{
+				if (pExpr)
+					expressions.push_back(pExpr);
+			}
+			else
+			{
+				cerr << "неправильная лексема" << endl;
+				break;
+			}
 		}
 	}
-}
+};
 
 int main()
 {
-	compile();
+	Compiler com(cin);
 	overrun_expression();
 	return 0;
 }
