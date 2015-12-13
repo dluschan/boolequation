@@ -137,25 +137,25 @@ bool number_value;
 string string_value;
 map<string, PExpr> variables;
 
-PExpr equal_expr();
+PExpr equal_expr(istream& s);
 
-Token_value get_token()
+Token_value get_token(istream& s)
 {
 	char ch = 0;
-	cin >> ch;
+	s >> ch;
 	switch(ch)
 	{
 	case ';': case '&': case '|': case '(': case ')': case '=': case '!':
 		return curr_tok = Token_value(ch);
 	case '0': case '1':
-		cin.putback(ch);
-		cin >> number_value;
+		s.putback(ch);
+		s >> number_value;
 		return curr_tok = NUMBER;
 	default:
 		if (isalpha(ch))
 		{
-			cin.putback(ch);
-			cin >> string_value;
+			s.putback(ch);
+			s >> string_value;
 			return curr_tok = NAME;
 		}
 		else
@@ -165,29 +165,29 @@ Token_value get_token()
 	}
 }
 
-PExpr prim()
+PExpr prim(istream& s)
 {
-	get_token();
+	get_token(s);
 
 	switch(curr_tok)
 	{
 	case NUMBER:
 	{
 		bool v = number_value;
-		get_token();
+		get_token(s);
 		return make_shared<Constant>(v);
 	}
 	case LP:
 	{
-		PExpr e = equal_expr();
+		PExpr e = equal_expr(s);
 		if (curr_tok != RP)
 			cerr << "ожидалась )" << endl;
-		get_token();
+		get_token(s);
 		return e;
 	}
 	case NOT:
 	{
-		PExpr e = prim();
+		PExpr e = prim(s);
 		e = make_shared<Negation>(e);
 		return e;
 	}
@@ -195,7 +195,7 @@ PExpr prim()
 	{
 		if (variables.find(string_value) == variables.end())
 			variables[string_value] = make_shared<Variable>();
-		get_token();
+		get_token(s);
 		return variables[string_value];
 	}
 	default:
@@ -203,16 +203,16 @@ PExpr prim()
 	}
 }
 
-PExpr term()
+PExpr term(istream& s)
 {
-	PExpr pLeft = prim();
+	PExpr pLeft = prim(s);
 	while (true)
 	{
 		switch(curr_tok)
 		{
 		case AND:
 		{
-			PExpr pRight = prim();
+			PExpr pRight = prim(s);
 			pLeft = make_shared<Conjunction>(pLeft, pRight);
 			break;
 		}
@@ -222,16 +222,16 @@ PExpr term()
 	}
 }
 
-PExpr or_expr()
+PExpr or_expr(istream& s)
 {
-	PExpr pLeft = term();
+	PExpr pLeft = term(s);
 	while (true)
 	{
 		switch(curr_tok)
 		{
 		case OR:
 		{
-			PExpr pRight = term();
+			PExpr pRight = term(s);
 			pLeft = make_shared<Disjunction>(pLeft, pRight);
 			break;
 		}
@@ -241,16 +241,16 @@ PExpr or_expr()
 	}
 }
 
-PExpr equal_expr()
+PExpr equal_expr(istream& s)
 {
-	PExpr pLeft = or_expr();
+	PExpr pLeft = or_expr(s);
 	while (true)
 	{
 		switch(curr_tok)
 		{
 		case EQL:
 		{
-			PExpr pRight = or_expr();
+			PExpr pRight = or_expr(s);
 			pLeft = make_shared<Equality>(pLeft, pRight);
 			break;
 		}
@@ -271,7 +271,7 @@ public:
 		while(s >> ch)
 		{
 			s.putback(ch);
-			PExpr pExpr = equal_expr();
+			PExpr pExpr = equal_expr(s);
 			if (curr_tok == END)
 			{
 				if (pExpr)
