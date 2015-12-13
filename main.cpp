@@ -15,6 +15,17 @@ public:
 };
 typedef shared_ptr<Expr> PExpr;
 
+class TrueExpr: public Expr
+{
+public:
+	TrueExpr()
+	{}
+	operator bool() const
+	{
+		return true;
+	}
+};
+
 class Equality: public Expr
 {
 public:
@@ -125,7 +136,6 @@ Token_value curr_tok = END;
 bool number_value;
 string string_value;
 map<string, PExpr> variables;
-vector<PExpr> expressions;
 
 PExpr equal_expr();
 
@@ -250,37 +260,13 @@ PExpr equal_expr()
 	}
 }
 
-void overrun_expression()
-{
-	for (unsigned int i = 0; i < pow(2, variables.size()); ++i)
-	{
-		unsigned k = i;
-		for (auto it = variables.rbegin(); it != variables.rend(); ++it)
-		{
-			it->second->setValue(0x1 & k);
-			k >>= 1;
-		}
-		bool res = true;
-		for(auto expr: expressions)
-		{
-			if (!*expr)
-				res = false;
-		}
-		if (res)
-		{
-			for(auto pVar: variables)
-				cout << *pVar.second;
-			cout << endl;
-		}
-	}
-}
-
 class Compiler
 {
 public:
 	Compiler(istream& s)
 	{
 		char ch;
+		pGeneralExpr = make_shared<TrueExpr>(TrueExpr());
 
 		while(s >> ch)
 		{
@@ -289,7 +275,7 @@ public:
 			if (curr_tok == END)
 			{
 				if (pExpr)
-					expressions.push_back(pExpr);
+					pGeneralExpr = make_shared<Conjunction>(pGeneralExpr, pExpr);
 			}
 			else
 			{
@@ -298,11 +284,33 @@ public:
 			}
 		}
 	}
+
+	void overrun_expression()
+	{
+		for (uint i = 0; i < pow(2, variables.size()); ++i)
+		{
+			unsigned k = i;
+			for (auto it = variables.rbegin(); it != variables.rend(); ++it)
+			{
+				it->second->setValue(0x1 & k);
+				k >>= 1;
+			}
+			if (*pGeneralExpr)
+			{
+				for(auto pVar: variables)
+					cout << *pVar.second;
+				cout << endl;
+			}
+		}
+	}
+
+private:
+	PExpr pGeneralExpr;
 };
 
 int main()
 {
 	Compiler com(cin);
-	overrun_expression();
+	com.overrun_expression();
 	return 0;
 }
